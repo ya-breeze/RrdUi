@@ -1,0 +1,25 @@
+#!/usr/bin/rrdcgi
+<HTML>
+    <HEAD>
+        <TITLE>@COMPONENT@</TITLE>
+        <meta http-equiv="refresh" content="60" />
+    </HEAD>
+    <BODY>
+        <H1>@COMPONENT@</H1>
+
+	<FORM>
+	    <SELECT NAME="RRD_TIME">	
+		<OPTION SELECTED="true" value=1>1 hour</OPTION>
+		<OPTION value=2>2 hours</OPTION>
+		<OPTION value=3>3 hours</OPTION>
+		<OPTION value=6>6 hours</OPTION>
+		<OPTION value=24>1 day</OPTION>
+		<OPTION value=72>3 day</OPTION>
+		<OPTION value=168>1 week</OPTION>
+	    </SELECT>
+            <INPUT TYPE=SUBMIT>
+	</FORM>	
+	
+	@BODY@
+    </BODY>
+</HTML>
