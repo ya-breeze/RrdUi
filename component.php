@@ -6,12 +6,17 @@ class Component {
 	var $items = array();
 	var $name = "<unknown>";
 	var $host = "<unknown>";
+	var $colors = array("00FF00", "0000FF", "FF0000");
 	
 	var $drawStacked = FALSE;
 	function init($root, $host, $name) {
 		$this->name = $name;
 		$this->host = $host;
 		$this->items = getFiles("$root/$host/$name");
+	}
+	
+	function nextColor($idx) {
+		return $this->colors[$idx];
 	}
 	
 	function prepareTypes($collectionConf) {
@@ -41,16 +46,27 @@ class Component {
 					$color = "";
 					if( array_key_exists("Color", $type) && array_key_exists($instance, $type["Color"]) )
 						$color = $type["Color"][$instance];
-					echo "@@@".$typeName.":".$instance." = ".$type["Color"][$DSvalue]."@@@<br>";
 					if( empty($color) )
 						$color = "FF0000";
+					$draw = "LINE1";
+					if( array_key_exists("Module", $type) && $type["Module"]=="GenericStacked" )
+						if( empty($types[$typeName]) )
+							$draw = "AREA";
+						else
+							$draw = "STACK";
 					$types[$typeName] .= "DEF:$name=$GLOBALS[rrddir]/$this->host/$this->name/$value:$DSvalue:AVERAGE\n";
-					$types[$typeName] .= "LINE1:$name#$color:\"" . $itemTitle. "\" GPRINT:$name:LAST:\"    %10.2lf %s\" GPRINT:$name:MIN:\"%10.2lf %s\"  GPRINT:$name:MAX:\"%10.2lf %s\\n\"\n";
+					$types[$typeName] .= "$draw:$name#$color:\"" . $itemTitle. "\" GPRINT:$name:LAST:\"    %10.2lf %s\" GPRINT:$name:MIN:\"%10.2lf %s\"  GPRINT:$name:MAX:\"%10.2lf %s\\n\"\n";
 				}
 			} else {
 				$color = "FF0000";
+				$draw = "LINE1";
+				if( $type["Module"]=="GenericStacked" )
+					if( empty($types[$typeName]) )
+						$draw = "AREA";
+					else
+						$draw = "STACK";
 				$types[$typeName] .= "DEF:$fname=$GLOBALS[rrddir]/$this->host/$this->name/$value:value:AVERAGE\n";
-				$types[$typeName] .= "LINE1:$fname#$color:\"" . $instance . "\" GPRINT:$fname:LAST:\"    %10.2lf %s\" GPRINT:$fname:MIN:\"%10.2lf %s\"  GPRINT:$fname:MAX:\"%10.2lf %s\\n\"\n";
+				$types[$typeName] .= "$draw:$fname#$color:\"" . $instance . "\" GPRINT:$fname:LAST:\"    %10.2lf %s\" GPRINT:$fname:MIN:\"%10.2lf %s\"  GPRINT:$fname:MAX:\"%10.2lf %s\\n\"\n";
 			}
 		}
 		

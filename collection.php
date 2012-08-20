@@ -36,8 +36,8 @@ class CollectionConfig {
 							$typeData[$tokens[0]] = array();
 					$tokens2 = explode(" ", $tokens[1], 2);
 					$typeData[$tokens[0]][trim($tokens2[0])] = trim($tokens2[1]);
-					echo "!!!!!!! ".$type . ":".trim($tokens2[0]) ."=". trim($tokens2[1]). " !!!!!!!!!<br>";
-					echo "!!! " .implode(",", $typeData[$tokens[0]])."!!!<br>";
+// 					echo "!!!!!!! ".$type . ":".trim($tokens2[0]) ."=". trim($tokens2[1]). " !!!!!!!!!<br>";
+// 					echo "!!! " .implode(",", $typeData[$tokens[0]])."!!!<br>";
 				} else {
 					$typeData[$tokens[0]] = $tokens[1];
 				}
