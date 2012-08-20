@@ -7,7 +7,9 @@ function getDirectories( $path ){
     // Directories to ignore when listing output. Many hosts 
     // will deny PHP access to the cgi-bin. 
 
-    $dh = @opendir( $path ); 
+    $dh = @opendir( $path );
+    if( $dh==FALSE )
+    	die("Unable opendir $path"); 
     // Open the directory to the handle $dh 
      
     while( false !== ( $file = readdir( $dh ) ) ){ 
@@ -28,6 +30,8 @@ function getFiles( $path ){
     $result = array();
 
     $dh = @opendir( $path ); 
+    if( $dh==FALSE )
+    	die("Unable opendir $path"); 
     while( false !== ( $file = readdir( $dh ) ) ){ 
     	if( !is_dir( "$path/$file" ) ){
             $result[] = $file;
