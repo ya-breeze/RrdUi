@@ -5,8 +5,8 @@ class CollectionConfig {
 	var $types = array();
 	var $width = 400;
 	
-	function init() {
-		$file = fopen($GLOBALS['collectionconf'], 'r') or die ("can't read file '$GLOBALS[collectionconf]'");
+	function init($filename) {
+		$file = fopen($filename, 'r') or die ("can't read file '$filename'");
 		
 		$type = "";
 		$typeData = array();

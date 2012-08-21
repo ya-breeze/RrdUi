@@ -1,5 +1,5 @@
 <a href="?update">Update default graphs</a>
-
+<form action="?generate">
 <?php
 	require_once "config.php";
 	require_once "utils.php";
@@ -15,12 +15,14 @@
 			$components = array();
 			$componentDirs = getDirectories("$rrddir/$v");
 			foreach ($componentDirs as $kC => $vC) {
-				echo "----<a href='$cgidir/$defaultdir/$v-$vC.cgi?RRD_TIME=1'>$vC</a><br>";
 				$component = new Component();
 				$component->init($rrddir, $v, $vC);
+				
+				$hint = "";
 				foreach ($component->items as $kI => $vI) {
-					echo "--------$vI<br>";
+					$hint .= "$vI\n";
 				}
+				echo "----<input type='checkbox' name='$v-$vC' checked/><a href='$cgidir/$defaultdir/$v-$vC.cgi?RRD_TIME=1' title='$hint'>$vC</a><br>";
 				$components[$vC] = $component;
 			}
 			$hosts[$v] = $components;
@@ -34,7 +36,8 @@
 		
 		// Read configuration
 		$collectConfig = new CollectionConfig();
-		$collectConfig->init();
+		$collectConfig->init($GLOBALS['collectionconf']);
+		$collectConfig->init("$GLOBALS[rootdir]/plugins.conf");
 		
 		// Read templates
 		$template = array();

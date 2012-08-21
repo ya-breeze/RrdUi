@@ -34,11 +34,14 @@ class Component {
 			// append type
 			if( !array_key_exists($typeName, $types) )
 				$types[$typeName] = "";
+// 			if( $typeName==="cpu" && $this->name=="cpu-0" )
+// 					echo "$type:$instance:$DSvalue<br>";
 				
 			$type = $collectionConf->getType($typeName);
 			if( $type && array_key_exists("DataSources", $type) ) {
 				$dsList = explode(" ", $type["DataSources"]);
 				foreach ($dsList as $DSkey => $DSvalue) {
+			
 					$name = $fname . "_" . $DSvalue;
 					$itemTitle = $name;
 					if( array_key_exists("DSName", $type) && array_key_exists($DSvalue, $type["DSName"]) )
@@ -46,6 +49,9 @@ class Component {
 					$color = "";
 					if( array_key_exists("Color", $type) && array_key_exists($instance, $type["Color"]) )
 						$color = $type["Color"][$instance];
+					else if( array_key_exists("Color", $type) && array_key_exists($DSvalue, $type["Color"]) )
+						$color = $type["Color"][$DSvalue];
+					
 					if( empty($color) )
 						$color = "FF0000";
 					$draw = "LINE1";
