@@ -6,7 +6,21 @@ class Component {
 	var $items = array();
 	var $name = "<unknown>";
 	var $host = "<unknown>";
-	var $colors = array("00FF00", "0000FF", "FF0000");
+	var $colors = array("00AA00", "0000FF", "FF0000", 
+			  "00e000",
+  "0000ff",
+  "ffb000",
+  "ff00ff",
+  "ff0000",
+  "00e000",
+  "0000ff",
+  "ff00ff",
+  "a000a0",
+  "ffb000",
+  "ff8000",
+  "ff0000"
+			
+			);
 	
 	var $drawStacked = FALSE;
 	function init($root, $host, $name) {
@@ -16,11 +30,17 @@ class Component {
 	}
 	
 	function nextColor($idx) {
-		return $this->colors[$idx];
+		if( !is_int($idx) && !is_string($idx) )
+			$idx = 0;
+		if( array_key_exists($idx, $this->colors) )
+			return $this->colors[$idx];
+		$color = sprintf("%1$02X%2$02X%3$02X", rand(0, 255), rand(0, 255), rand(0, 255));
+		return $color;
 	}
 	
 	function prepareTypes($collectionConf) {
 		$types = array();
+		$typeColors = array();
 		foreach ($this->items as $key => $value) {
 			$fname = substr($value, 0, -4);
 			$typeName = $fname;
@@ -30,6 +50,7 @@ class Component {
 				$instance = substr($typeName, $idx+1);
 				$typeName = substr($typeName, 0, $idx);
 			}
+			echo "@@@ $typeName @@@<br>";
 				
 			// append type
 			if( !array_key_exists($typeName, $types) )
@@ -52,19 +73,30 @@ class Component {
 					else if( array_key_exists("Color", $type) && array_key_exists($DSvalue, $type["Color"]) )
 						$color = $type["Color"][$DSvalue];
 					
-					if( empty($color) )
-						$color = "FF0000";
+					if( empty($color) ) {
+						$idx = 0;
+						if(array_key_exists($typeName, $typeColors))
+							$idx = (int)$typeColors[$typeName];
+						$color = $this->nextColor($idx);
+						$typeColors[$typeName] = $idx + 1;
+					}
 					$draw = "LINE1";
+					
 					if( array_key_exists("Module", $type) && $type["Module"]=="GenericStacked" )
 						if( empty($types[$typeName]) )
 							$draw = "AREA";
 						else
 							$draw = "STACK";
+					
 					$types[$typeName] .= "DEF:$name=$GLOBALS[rrddir]/$this->host/$this->name/$value:$DSvalue:AVERAGE\n";
 					$types[$typeName] .= "$draw:$name#$color:\"" . $itemTitle. "\" GPRINT:$name:LAST:\"    %10.2lf %s\" GPRINT:$name:MIN:\"%10.2lf %s\"  GPRINT:$name:MAX:\"%10.2lf %s\\n\"\n";
 				}
 			} else {
-				$color = "FF0000";
+				$idx = 0;
+				if(array_key_exists($typeName, $typeColors))
+					$idx = $typeColors[$typeName];
+				$color = $this->nextColor($idx);
+				$typeColors[$typeName] = $idx + 1;
 				$draw = "LINE1";
 				if( $type["Module"]=="GenericStacked" )
 					if( empty($types[$typeName]) )
