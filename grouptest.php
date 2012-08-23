@@ -24,10 +24,9 @@
 // 	}
 	
 	$group_plugins = parse_ini_file("$GLOBALS[rootdir]/group_plugins.ini", true);
-// 	print_r($group_plugins); echo "<br>";
 	
 	foreach($group_plugins as $pName => $plugin) {
-		echo "$pName<br>";
+// 		echo "$pName<br>";
 		$result = "";
 		
 		///// Get files to plugin
@@ -45,11 +44,11 @@
 				die("Wrong DEF - there should be 3 path elements: '$value'");
 				
 // 			$defs[] = array($tokens[0], $filemasks, $tokens[2], $tokens[3]);
-			$defs[] = array($tokens[0], $tokens[1], $tokens[2], $tokens[3]);
+			$defs[] = array(trim($tokens[0]), trim($tokens[1]), trim($tokens[2]), trim($tokens[3]));
 		}
 		
 		// matching files against DEFs
-// 		$files = array();
+		$rawVariables = array();
 		$variables = array();
 		foreach ($hosts as $hK => $hV) {
 			foreach ($hV as $cK => $cV) {
@@ -63,7 +62,8 @@
 							$varName = $defV[0];
 							foreach($matches as $mK => $mV)
 								$varName = str_replace("\$$mK", $mV, $varName);
-							$variables[$varName] = "$hK/$cK/$iV:$defV[2]:$defV[3]";						
+							$rawVariables[$varName] = "$hK/$cK/$iV:$defV[2]:$defV[3]";						
+							$variables[] = $varName;						
 						}
 					}
 				}
@@ -71,21 +71,51 @@
 		}
 // 		print_r($variables);
 
-		////// Processing LINE
+		////// Processing FUNC
+		$funcs = array();
+		if( array_key_exists("FUNC", $plugin) ) {
+			foreach ($plugin["FUNC"] as $key => $value) {
+				$tokens = explode(":", $value);
+				if( count($tokens)!=3 )
+					die("Wrong FUNC - there should be 3 items: '$value'");
+				
+				$outputVariable = "";
+				$matchVariables = array();
+				$pattern = str_replace("/", "\/", trim($tokens[2]));
+				$pattern = "/$pattern/";
+				foreach ($variables as $v) {
+					if( preg_match($pattern, $v, $matches) ) {
+						// Build variable name based on first matched variable
+						if( empty($outputVariable) ) {
+							$outputVariable = trim($tokens[0]);
+							foreach($matches as $mK => $mV)
+								$outputVariable = str_replace("\$$mK", $mV, $outputVariable);
+							echo "$outputVariable\n";
+						}
+						$matchVariables[] = $v;
+					}
+				}
+				$funcs[] = array($outputVariable, trim($tokens[1]), $matchVariables);
+				$variables[] = $outputVariable;						
+			}
+		}
+		print_r($funcs);
+		
+		////// Processing DRAW
 		$draws = array();
 		if( array_key_exists("DRAW", $plugin) ) {
 			foreach ($plugin["DRAW"] as $key => $value) {
 				$tokens = explode(":", $value);
 				if( count($tokens)!=3 )
 					die("Wrong DRAW - there should be 3 items: '$value'");
-				foreach ($variables as $v => $vValue) {
-					$varPattern = str_replace("/", "\/", $tokens[1]);
+				foreach ($variables as $v) {
+					$varPattern = str_replace("/", "\/", trim($tokens[1]));
 					$varPattern = "/$varPattern/";
 					if( preg_match($varPattern, $v, $matches) ) {
-						$title = $tokens[2];
+						$title = trim($tokens[2]);
 						foreach($matches as $mK => $mV)
 							$title = str_replace("\$$mK", $mV, $title);
-						$draws[] = array($tokens[0], $v, $title);
+						$draws[] = array(trim($tokens[0]), $v, $title);
 					}
 				}
 			}
@@ -93,6 +123,21 @@
 		
 		////// Prepare result
 		$result .= "#!/usr/bin/rrdcgi
+		<RRD::GOODFOR 60>
+		
+			<FORM>
+		    <SELECT NAME=\"RRD_TIME\">	
+			<OPTION SELECTED=\"true\" value=1>1 hour</OPTION>
+			<OPTION value=2>2 hours</OPTION>
+			<OPTION value=3>3 hours</OPTION>
+			<OPTION value=6>6 hours</OPTION>
+			<OPTION value=24>1 day</OPTION>
+			<OPTION value=72>3 day</OPTION>
+			<OPTION value=168>1 week</OPTION>
+		    </SELECT>
+            <INPUT TYPE=SUBMIT>
+		</FORM>	
+		
 		<RRD::GRAPH
         	--imginfo '<IMG SRC=/$GLOBALS[wwwdir]/images/%s WIDTH=%lu HEIGHT=%lu >'
 			$GLOBALS[rootdir]/images/$pName.png
@@ -101,19 +146,73 @@
 			-t \"Requests per second\"
 			-v \"y axis title\"
 			-l 0\n";
-		foreach ($variables as $vK => $vV) {
+		
+		// Adding DEF
+		foreach ($rawVariables as $vK => $vV) {
 			$result .= "DEF:$vK=$GLOBALS[rrddir]/$vV\n";
 		}
-		$idx = 0;
+		
+		// Adding functions
+		foreach ($funcs as $func) {
+			if( $func[1]=="SUM" ) {
+				if( count($func[2])<2 )
+					die("Unable sum less than two variables");
+				$cdef = array_pop($func[2]) . "," . array_pop($func[2]) . ",+";
+				foreach ($func[2] as $input) {
+					$cdef .= "," . $input . ",+";
+				}
+				$result .= "CDEF:$func[0]=$cdef\n";
+			}
+		}
+		
+		
+		// Getting maximum title length
+		$maxTitleLength = 0;
 		foreach ($draws as $dK => $dV) {
-			$line = "$dV[0]:$dV[1]";
+			if( !empty($dV[2]) )
+				$maxTitleLength = max($maxTitleLength, strlen($dV[2]));
+			else
+				$maxTitleLength = max($maxTitleLength, strlen($dV[1]));
+		}
+		$align = sprintf("%1\$$maxTitleLength"."s", " ");
+		$result .= "COMMENT:\"$align"."          Cur\:          Min\:          Max\:          Avg\:\\n\"\n";
+		
+		$idx = 0;
+		// There should be a AREA or LINE before STACK
+		$canStack = false;
+		foreach ($draws as $dK => $dV) {
+			$line = "";
+			if( $dV[0]=="STACK" && $canStack==false )
+				$line .= "AREA";
+			else
+				$line .= $dV[0];
+			if( $line=="AREA" || !(strpos("LINE", $line)===false) )
+				$canStack = true;
+			
+			$line .= ":$dV[1]";
+			
 			if( strpos("#", $dV[1])==0 ) {
 				$line .= "#" . getNextColor($idx);
 				$idx += 1;
 			}
-			if( !empty($dV[2]) )
-				$line .= ":$dV[2]";
+			$alignChar = 0;
+			if( !empty($dV[2]) ) {
+				$line .= ":\"$dV[2]\"";
+				$alignChar = $maxTitleLength - strlen($dV[2]); 
+			} else {
+				$line .= ":\"$dV[1]\"";
+				$alignChar = $maxTitleLength - strlen($dV[1]); 
+			}
+
 			$result .= "$line\n";
+			
+			// Adding some values
+			$align = sprintf("%1\$$alignChar"."s", " ");
+				
+			$result .= "GPRINT:$dV[1]:LAST:\"$align%10.2lf %s\"\n";
+			$result .= "GPRINT:$dV[1]:MIN:\"%10.2lf %s\"\n";
+			$result .= "GPRINT:$dV[1]:MAX:\"%10.2lf %s\"\n";
+			$result .= "GPRINT:$dV[1]:AVERAGE:\"%10.2lf %s\\n\"\n";
 		}
 		$result .= ">";
 
@@ -124,6 +223,6 @@
 		chmod($fname, 0755);
 
 		echo "<a href='$cgidir/$pName.cgi'>$pName</a><br>";
-		echo "$result\n";
+// 		echo "$result\n";
 	}
 ?>

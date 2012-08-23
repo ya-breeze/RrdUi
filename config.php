@@ -8,9 +8,7 @@
 	$templatedir    = "templates";
 	$collectionconf = "/var/www/collection3/etc/collection.conf";
 
-	$colors = array("00AA00", "0000FF", "FF0000", "00e000",
-				  "0000ff",
-				  "ffb000",
+	$colors = array("00AA00", "0000FF", "FF0000", "ffb000",
 				  "ff00ff",
 				  "ff0000",
 				  "00e000",
