@@ -80,17 +80,42 @@
 					die("Wrong FUNC - there should be 3 items: '$value'");
 				
 				$outputVariable = "";
+				$equalPart = "";
 				$matchVariables = array();
-				$pattern = str_replace("/", "\/", trim($tokens[2]));
-				$pattern = "/$pattern/";
 				foreach ($variables as $v) {
+					$pattern = trim($tokens[2]);
+					// Build pattern based on first matched variable
+					if( empty($outputVariable) )
+						$pattern = str_replace("(@equal@)", "(.*)", $pattern);
+					else
+						$pattern = str_replace("(@equal@)", $equalPart, $pattern);
+						
+					$pattern = str_replace("/", "\/", $pattern);
+					$pattern = "/$pattern/";
+							
 					if( preg_match($pattern, $v, $matches) ) {
 						// Build variable name based on first matched variable
 						if( empty($outputVariable) ) {
 							$outputVariable = trim($tokens[0]);
 							foreach($matches as $mK => $mV)
 								$outputVariable = str_replace("\$$mK", $mV, $outputVariable);
-							echo "$outputVariable\n";
+							
+							///// What is equal part?
+							// What is equal position?
+							$expr = trim($tokens[2]);
+							$idx = strpos($expr, "@equal@");
+							// What is 'equal' matched position?
+							$position = 0;
+							for ($i = 0; $i < $idx; $i++) {
+								if( $expr[$i]=="(" )
+									$position++;
+							}
+							$equalPart = $matches[$position];
+							print_r($matches);
+							echo "equal - $equalPart\n";
+							
+							if( $equalPart=="" )
+								die("Equal part can't be empty - '$value'");
 						}
 						$matchVariables[] = $v;
 					}
@@ -154,12 +179,24 @@
 		
 		// Adding functions
 		foreach ($funcs as $func) {
-			if( $func[1]=="SUM" ) {
-				if( count($func[2])<2 )
-					die("Unable sum less than two variables");
-				$cdef = array_pop($func[2]) . "," . array_pop($func[2]) . ",+";
+			if( $func[1]=="SUM" || $func[1]=="DIV" || $func[1]=="MUL" ) {
+				$operation = "";
+				if( $func[1]=="SUM" ) {
+					if( count($func[2])<2 )
+						die("Unable sum less than two variables");
+					$operation = "+";
+				} elseif( $func[1]=="DIV" ) {
+					if( count($func[2])!=2 )
+						die("Can perform division only on two variables");
+					$operation = "/";
+				} elseif( $func[1]=="MUL" ) {
+					if( count($func[2])<2 )
+						die("Unable multiple less than two variables");
+					$operation = "*";
+				}
+				$cdef = array_pop($func[2]) . "," . array_pop($func[2]) . ",$operation";
 				foreach ($func[2] as $input) {
-					$cdef .= "," . $input . ",+";
+					$cdef .= "," . $input . ",$operation";
 				}
 				$result .= "CDEF:$func[0]=$cdef\n";
 			}
