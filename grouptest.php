@@ -104,10 +104,13 @@
 		foreach ($variables as $vK => $vV) {
 			$result .= "DEF:$vK=$GLOBALS[rrddir]/$vV\n";
 		}
+		$idx = 0;
 		foreach ($draws as $dK => $dV) {
 			$line = "$dV[0]:$dV[1]";
-			if( strpos("#", $dV[1])==0 )
-				$line .= "#000000";// . nextColor(0);
+			if( strpos("#", $dV[1])==0 ) {
+				$line .= "#" . getNextColor($idx);
+				$idx += 1;
+			}
 			if( !empty($dV[2]) )
 				$line .= ":$dV[2]";
 			$result .= "$line\n";

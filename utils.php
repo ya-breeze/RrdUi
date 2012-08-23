@@ -53,4 +53,12 @@ function rrmdir($dir) {
 	rmdir($dir);
 }
 
+function getNextColor($idx) {
+	if( !is_int($idx) && !is_string($idx) )
+		$idx = 0;
+	if( array_key_exists($idx, $GLOBALS['colors']) )
+		return $GLOBALS['colors'][$idx];
+	$color = sprintf("%1$02X%2$02X%3$02X", rand(0, 255), rand(0, 255), rand(0, 255));
+	return $color;
+}
 ?>

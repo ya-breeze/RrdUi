@@ -51,7 +51,7 @@ class Component {
 						$idx = 0;
 						if(array_key_exists($typeName, $typeColors))
 							$idx = (int)$typeColors[$typeName];
-						$color = nextColor($idx);
+						$color = getNextColor($idx);
 						$typeColors[$typeName] = $idx + 1;
 					}
 					$draw = "LINE1";
@@ -69,7 +69,7 @@ class Component {
 				$idx = 0;
 				if(array_key_exists($typeName, $typeColors))
 					$idx = $typeColors[$typeName];
-				$color = nextColor($idx);
+				$color = getNextColor($idx);
 				$typeColors[$typeName] = $idx + 1;
 				$draw = "LINE1";
 				if( $type["Module"]=="GenericStacked" )
