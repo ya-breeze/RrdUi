@@ -6,36 +6,12 @@ class Component {
 	var $items = array();
 	var $name = "<unknown>";
 	var $host = "<unknown>";
-	var $colors = array("00AA00", "0000FF", "FF0000", 
-			  "00e000",
-  "0000ff",
-  "ffb000",
-  "ff00ff",
-  "ff0000",
-  "00e000",
-  "0000ff",
-  "ff00ff",
-  "a000a0",
-  "ffb000",
-  "ff8000",
-  "ff0000"
-			
-			);
 	
 	var $drawStacked = FALSE;
 	function init($root, $host, $name) {
 		$this->name = $name;
 		$this->host = $host;
 		$this->items = getFiles("$root/$host/$name");
-	}
-	
-	function nextColor($idx) {
-		if( !is_int($idx) && !is_string($idx) )
-			$idx = 0;
-		if( array_key_exists($idx, $this->colors) )
-			return $this->colors[$idx];
-		$color = sprintf("%1$02X%2$02X%3$02X", rand(0, 255), rand(0, 255), rand(0, 255));
-		return $color;
 	}
 	
 	function prepareTypes($collectionConf) {
@@ -50,8 +26,6 @@ class Component {
 				$instance = substr($typeName, $idx+1);
 				$typeName = substr($typeName, 0, $idx);
 			}
-			echo "@@@ $typeName @@@<br>";
-				
 			// append type
 			if( !array_key_exists($typeName, $types) )
 				$types[$typeName] = "";
@@ -77,7 +51,7 @@ class Component {
 						$idx = 0;
 						if(array_key_exists($typeName, $typeColors))
 							$idx = (int)$typeColors[$typeName];
-						$color = $this->nextColor($idx);
+						$color = nextColor($idx);
 						$typeColors[$typeName] = $idx + 1;
 					}
 					$draw = "LINE1";
@@ -95,7 +69,7 @@ class Component {
 				$idx = 0;
 				if(array_key_exists($typeName, $typeColors))
 					$idx = $typeColors[$typeName];
-				$color = $this->nextColor($idx);
+				$color = nextColor($idx);
 				$typeColors[$typeName] = $idx + 1;
 				$draw = "LINE1";
 				if( $type["Module"]=="GenericStacked" )
