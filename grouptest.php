@@ -92,7 +92,6 @@
 				$matchVariables = array();
 				foreach ($variables as $v) {
 					if( preg_match($pattern, $v, $matches) && preg_match($groupby, $v, $groupMatches) ) {
-						print_r($groupMatches);
 						// If there is an item with the same $groupMatches - it's will be the same output variable
 						array_shift($groupMatches);
 						$glued = implode(":", $groupMatches);
@@ -120,6 +119,97 @@
 			}
 		}
 // 		print_r($funcs);
+
+		
+		////// Processing CDEF
+		$cdefs = array();
+		if( array_key_exists("CDEF", $plugin) ) {
+			foreach ($plugin["CDEF"] as $key => $value) {
+				$tokens = explode(":", $value);
+				if( count($tokens)!=3 )
+					die("Wrong CDEF - there should be 3 items: '$value'");
+				
+				// Remove spaces and trying find variables
+				$is_variables = false;
+				$expr = explode(",", $tokens[1]);
+				foreach ($expr as $k => $v) {
+					$v = trim($v);
+					$expr[$k] = $v;
+					if( $v[0]=="[" )
+						$is_variables = true;
+				}
+				if( !$is_variables ) {
+					$cdefs[] = array(trim($tokens[0]), implode(",", $expr));
+					continue;
+				}
+
+				$groupby = trim($tokens[2]);
+				$groupby = str_replace("/", "\/", $groupby);
+				$groupby = "/$groupby/";
+
+				$outputVariables = array();
+				$matchVariables = array();
+				
+				foreach ($expr as $k => $exprItem) {
+					if( $exprItem[0]=="[" ){
+						$pattern = str_replace("/", "\/", substr($exprItem, 1, strlen($exprItem)-2));
+						$pattern = "/$pattern/";
+// 						echo "pattern - $pattern\n";
+												
+						foreach ($variables as $v) {
+							if( preg_match($pattern, $v) && preg_match($groupby, $v, $groupMatches) ) {
+								// If there is an item with the same $groupMatches - it's will be the same output variable
+								array_shift($groupMatches);
+								$groupMatches = array_filter($groupMatches);
+								$glued = implode(":", $groupMatches);
+// 								echo "glued $glued\n";
+								
+								if( array_key_exists($glued, $matchVariables) ) {
+									$matchVariables[$glued][] = $v;
+								} else {
+									// It's the new group
+										
+									// Build variable name based on first matched variable
+									$outputVariable = trim($tokens[0]);
+									array_unshift($groupMatches, $v);
+									foreach($groupMatches as $mK => $mV)
+										$outputVariable = str_replace("\$$mK", $mV, $outputVariable);
+									$outputVariables[$glued] = $outputVariable;
+									$matchVariables[$glued] = array();
+									$matchVariables[$glued][] = $v;
+								}
+							}
+						}
+						
+					}
+				}
+				
+				foreach ($outputVariables as $glued => $variable) {
+					$finalExpr = array();					
+					foreach ($expr as $k => $exprItem) {
+						if( $exprItem[0]=="[" ){
+							$pattern = str_replace("/", "\/", substr($exprItem, 1, strlen($exprItem)-2));
+							$pattern = "/$pattern/";
+							foreach($matchVariables[$glued] as $mK => $mV) {
+								if( preg_match($pattern, $mV) ) {
+									$exprItem = $mV;
+									unset($matchVariables[$glued][$mK]);
+									break;
+								}
+							}
+						}
+						$finalExpr[] = $exprItem;
+					}
+							
+								
+					$cdefs[] = array($variable, implode(",", $finalExpr));
+					$variables[] = $variable;
+				}
+			}
+		}
+// 		print_r($cdefs);
+		
+		
 		
 		////// Processing DRAW
 		$draws = array();
@@ -195,6 +285,12 @@
 				}
 				$result .= "CDEF:$func[0]=$cdef\n";
 			}
+		}
+
+		// Adding cdefs
+		print_r($cdefs);
+		foreach ($cdefs as $cdefItem) {
+			$result .= "CDEF:$cdefItem[0]=$cdefItem[1]\n";
 		}
 		
 		
