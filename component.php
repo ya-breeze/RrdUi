@@ -86,12 +86,13 @@ class Component {
 	}
 	
 	function prepareBody($collectionConf) {
-		$result = "";
+		$result = "<H2><a name=\"$this->name\"/>$this->name</H2>";
 		$types = $this->prepareTypes($collectionConf);
 		foreach ($types as $key => $value) {
+			if( count($types)>1 )
+				$result .= "<H3><a name=\"$key\"/>$key</H3>";
 			$result .= 			
-						"<H2>$key</H2>
-						<RRD::GRAPH
+						"<RRD::GRAPH
 							--imginfo '<IMG SRC=/$GLOBALS[wwwdir]/images/%s WIDTH=%lu HEIGHT=%lu >'
 							$GLOBALS[rootdir]/images/$this->host-$this->name-$key.png
 						-t '$this->name'

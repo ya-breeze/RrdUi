@@ -1,4 +1,5 @@
 <?php 
+require_once "config.php";
 
 function getDirectories( $path ){ 
     $result = array();
@@ -61,4 +62,47 @@ function getNextColor($idx) {
 	$color = sprintf("%1$02X%2$02X%3$02X", rand(0, 255), rand(0, 255), rand(0, 255));
 	return $color;
 }
+
+function getAllRrd() {
+	$hosts = array();
+// 	$comps = array();
+	$dirs = getDirectories($GLOBALS['rrddir']);
+	foreach ($dirs as $k => $v) {
+		$components = array();
+		$componentDirs = getDirectories("$GLOBALS[rrddir]/$v");
+		foreach ($componentDirs as $kC => $vC) {
+			$component = getFiles("$GLOBALS[rrddir]/$v/$vC");
+			$components[$vC] = $component;
+// 			$comps[$vC] = "";
+		}
+		$hosts[$v] = $components;
+	}
+	return $hosts;
+}
+
+function generateFile($outputName, $replace, $template) {
+	$fh = fopen($outputName, 'w') or die ("can't write file '$outputName'");
+
+	foreach($replace as $k => $v) {
+		$template = str_replace($k, $v, $template);
+	}
+	
+	fwrite($fh, $template);
+	fclose($fh);
+	chmod($outputName, 0775);
+}
+
+function getHostPlugins() {
+	$groupfiles = getFiles("$GLOBALS[rootdir]/plugins/host");
+	$groupcomps = array();
+	foreach ($groupfiles as $key => $value) {
+		$group_plugins = parse_ini_file("$GLOBALS[rootdir]/plugins/host/$value", true);
+		foreach ($group_plugins as $pkey => $pvalue) {
+			$groupcomps[] = $pkey;
+		}
+	}
+	
+	return $groupcomps;
+}
+
 ?>
