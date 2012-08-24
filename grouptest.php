@@ -76,55 +76,50 @@
 		if( array_key_exists("FUNC", $plugin) ) {
 			foreach ($plugin["FUNC"] as $key => $value) {
 				$tokens = explode(":", $value);
-				if( count($tokens)!=3 )
-					die("Wrong FUNC - there should be 3 items: '$value'");
+				if( count($tokens)!=4 )
+					die("Wrong FUNC - there should be 4 items: '$value'");
 				
-				$outputVariable = "";
-				$equalPart = "";
+				$pattern = trim($tokens[2]);
+				$pattern = str_replace("/", "\/", $pattern);
+				$pattern = "/$pattern/";
+
+				$groupby = trim($tokens[3]);
+				$groupby = str_replace("/", "\/", $groupby);
+				$groupby = "/$groupby/";
+
+				$outputVariables = array();
+				$equalParts = array();
 				$matchVariables = array();
 				foreach ($variables as $v) {
-					$pattern = trim($tokens[2]);
-					// Build pattern based on first matched variable
-					if( empty($outputVariable) )
-						$pattern = str_replace("(@equal@)", "(.*)", $pattern);
-					else
-						$pattern = str_replace("(@equal@)", $equalPart, $pattern);
-						
-					$pattern = str_replace("/", "\/", $pattern);
-					$pattern = "/$pattern/";
+					if( preg_match($pattern, $v, $matches) && preg_match($groupby, $v, $groupMatches) ) {
+						print_r($groupMatches);
+						// If there is an item with the same $groupMatches - it's will be the same output variable
+						array_shift($groupMatches);
+						$glued = implode(":", $groupMatches);
+// 						echo "glued $glued\n";
+						if( array_key_exists($glued, $matchVariables) ) {
+							$matchVariables[$glued][] = $v;
+						} else {
+							// It's the new group 
 							
-					if( preg_match($pattern, $v, $matches) ) {
-						// Build variable name based on first matched variable
-						if( empty($outputVariable) ) {
+							// Build variable name based on first matched variable
 							$outputVariable = trim($tokens[0]);
-							foreach($matches as $mK => $mV)
+							array_unshift($groupMatches, $v);
+							foreach($groupMatches as $mK => $mV)
 								$outputVariable = str_replace("\$$mK", $mV, $outputVariable);
-							
-							///// What is equal part?
-							// What is equal position?
-							$expr = trim($tokens[2]);
-							$idx = strpos($expr, "@equal@");
-							// What is 'equal' matched position?
-							$position = 0;
-							for ($i = 0; $i < $idx; $i++) {
-								if( $expr[$i]=="(" )
-									$position++;
-							}
-							$equalPart = $matches[$position];
-							print_r($matches);
-							echo "equal - $equalPart\n";
-							
-							if( $equalPart=="" )
-								die("Equal part can't be empty - '$value'");
-						}
-						$matchVariables[] = $v;
+							$outputVariables[$glued] = $outputVariable;
+							$matchVariables[$glued] = array();
+							$matchVariables[$glued][] = $v;
+						}						
 					}
 				}
-				$funcs[] = array($outputVariable, trim($tokens[1]), $matchVariables);
-				$variables[] = $outputVariable;						
+				foreach ($outputVariables as $glued => $variable) {
+					$funcs[] = array($variable, trim($tokens[1]), $matchVariables[$glued]);
+					$variables[] = $variable;						
+				}
 			}
 		}
-		print_r($funcs);
+// 		print_r($funcs);
 		
 		////// Processing DRAW
 		$draws = array();
