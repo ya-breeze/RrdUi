@@ -25,6 +25,9 @@
 	
 	$group_plugins = parse_ini_file("$GLOBALS[rootdir]/group_plugins.ini", true);
 	
+	
+	$GLOBALS['host'] = "localhost";
+	
 	foreach($group_plugins as $pName => $plugin) {
 // 		echo "$pName<br>";
 		$result = "";
@@ -42,10 +45,11 @@
 			$filemasks = explode("/", $tokens[1]);
 			if( count($filemasks)!=3 )
 				die("Wrong DEF - there should be 3 path elements: '$value'");
+			$filemasks[0] = str_replace("\$host", $GLOBALS['host'], $filemasks[0]);
 				
-// 			$defs[] = array($tokens[0], $filemasks, $tokens[2], $tokens[3]);
-			$defs[] = array(trim($tokens[0]), trim($tokens[1]), trim($tokens[2]), trim($tokens[3]));
+			$defs[] = array(trim($tokens[0]), trim(implode("/", $filemasks)), trim($tokens[2]), trim($tokens[3]));
 		}
+// 		print_r($defs);
 		
 		// matching files against DEFs
 		$rawVariables = array();
@@ -288,7 +292,6 @@
 		}
 
 		// Adding cdefs
-		print_r($cdefs);
 		foreach ($cdefs as $cdefItem) {
 			$result .= "CDEF:$cdefItem[0]=$cdefItem[1]\n";
 		}
