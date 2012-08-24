@@ -7,6 +7,8 @@ function generateHostPlugin($pluginName, $host) {
 	
 	$hosts = getAllRrd();
 	$group_plugins = getHostPlugins();
+	if( !array_key_exists($pluginName, $group_plugins) )
+		die("There is no group plugin $pluginName");
 	$plugin = $group_plugins[$pluginName];
 
 
@@ -216,10 +218,11 @@ function generateHostPlugin($pluginName, $host) {
 		}
 		
 		////// Prepare result
+		$result .= "<H2><a name=\"$pluginName\"/>$pluginName</H2>";
 		$result .= "
 		<RRD::GRAPH
         	--imginfo '<IMG SRC=/$GLOBALS[wwwdir]/images/%s WIDTH=%lu HEIGHT=%lu >'
-			$GLOBALS[rootdir]/images/$pName.png
+			$GLOBALS[rootdir]/images/$pluginName.png
 			-w 800 -h200
 			-s end-<RRD::CV::PATH RRD_TIME>hour
 			-t \"Requests per second\"

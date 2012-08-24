@@ -5,6 +5,7 @@
 	require_once "utils.php";
 	require_once "component.php";
 	require_once "collection.php";
+	require_once "generateHostPlugin.php";
 	
 	$pluginconfig = getPluginConfig();
 	$screens = getScreens($pluginconfig);
@@ -85,6 +86,11 @@
 			$hostGraphs[$host] .= $graph;
 		}
 		foreach ($graphs[1] as $key => $value) {
+			$graph = generateHostPlugin($value, $host);
+				
+			if( !array_key_exists($host, $hostGraphs) )
+				$hostGraphs[$host] = "";
+			$hostGraphs[$host] .= $graph;
 		}
 	}
 	foreach ($hostGraphs as $host => $value) {
