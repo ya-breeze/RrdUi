@@ -92,32 +92,4 @@ function generateFile($outputName, $replace, $template) {
 	chmod($outputName, 0775);
 }
 
-function getHostPlugins() {
-	$groupfiles = getFiles("$GLOBALS[rootdir]/plugins/host");
-	$groupcomps = array();
-	foreach ($groupfiles as $key => $value) {
-		$group_plugins = parse_ini_file("$GLOBALS[rootdir]/plugins/host/$value", true);
-		foreach ($group_plugins as $pkey => $pvalue) {
-			$groupcomps[$pkey] = $pvalue;
-		}
-	}
-	
-	return $groupcomps;
-}
-
-function getSystemPlugins() {
-	$groupfiles = getFiles("$GLOBALS[rootdir]/plugins/system");
-	$groupcomps = array();
-	foreach ($groupfiles as $key => $value) {
-		$group_plugins = parse_ini_file("$GLOBALS[rootdir]/plugins/system/$value", true);
-		foreach ($group_plugins as $pkey => $pvalue) {
-			$groupcomps[$pkey] = $pvalue;
-		}
-	}
-
-	return $groupcomps;
-}
-
-// function 
-
 ?>

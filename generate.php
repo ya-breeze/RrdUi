@@ -6,6 +6,7 @@
 	require_once "component.php";
 	require_once "collection.php";
 	require_once "generateHostPlugin.php";
+	require_once "pluginsconfig.php";
 	
 	$pluginconfig = getPluginConfig();
 	$screens = getScreens($pluginconfig);
@@ -16,8 +17,10 @@
 	$collectConfig->init("$GLOBALS[rootdir]/plugins/$GLOBALS[defaultdir]/plugins.conf");
 	
 	// Get plugin description
-	$host_plugins = getHostPlugins();
-	$system_plugins = getSystemPlugins();
+	$host_plugins = new PluginsConfig();
+	$host_plugins->init("$GLOBALS[rootdir]/plugins/host");
+	$system_plugins = new PluginsConfig();
+	$system_plugins->init("$GLOBALS[rootdir]/plugins/system");
 	
 		
 	// Read templates
@@ -113,7 +116,10 @@
 			$hostGraphs[$host] .= $graph;
 		}
 		foreach ($graphs[1] as $key => $value) {
-			$graph = generateHostPlugin($host_plugins, $value, $host);
+			$plugin = $host_plugins->getPlugin($value);
+			if( count($plugin)==0 )
+				die("There is no plugin '$value'");
+			$graph = generateHostPlugin($value, $plugin, $host);
 				
 			if( !array_key_exists($host, $hostGraphs) )
 				$hostGraphs[$host] = "";
@@ -129,8 +135,12 @@
 	$screenGraphs = array();
 	foreach ($screens as $screenName => $graphs) {
 		$body = "";
-		foreach ($graphs as $key => $value)
-			$body .= generateHostPlugin($system_plugins, $value, ".*"); // .* as a hostname
+		foreach ($graphs as $key => $value) {
+			$plugin = $system_plugins->getPlugin($value);
+			if( count($plugin)==0 )
+				die("There is no plugin '$value'");
+			$body .= generateHostPlugin($value, $plugin, ".*"); // .* as a hostname
+		}
 		generateFile("$GLOBALS[rootdir]/$cgidir/system/$screenName.cgi",
 				array("@BODY@"=>$body, "@TOC@"=>$tocs["screen_$screenName"], "@HOST@"=>$screenName),
 				$template["host.tmpl"]);

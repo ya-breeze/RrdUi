@@ -2,6 +2,7 @@
 	require_once "config.php";
 	require_once "utils.php";
 	require_once "screens.php";
+	require_once "pluginsconfig.php";
 	
 	$hosts = array();
 	$comps = array();
@@ -18,26 +19,13 @@
 	}
 	ksort($hosts);
 	
-	$groupfiles = getFiles("$GLOBALS[rootdir]/plugins/host");
-	$groupcomps = array(); 
-	foreach ($groupfiles as $key => $value) {
-		$group_plugins = parse_ini_file("$GLOBALS[rootdir]/plugins/host/$value", true);
-		foreach ($group_plugins as $pkey => $pvalue) {
-			$groupcomps[] = $pkey;
-		}
-	}
-	
-	$systemfiles = getFiles("$GLOBALS[rootdir]/plugins/system");
-	$systemcomps = array();
-	foreach ($systemfiles as $key => $value) {
-		$system_plugins = parse_ini_file("$GLOBALS[rootdir]/plugins/system/$value", true);
-		foreach ($system_plugins as $pkey => $pvalue) {
-			$systemcomps[] = $pkey;
-		}
-	}
-	
 	$pluginconfig = getPluginConfig();
 	$screens = getScreens($pluginconfig);
+
+	$group_plugins = new PluginsConfig();
+	$group_plugins->init("$GLOBALS[rootdir]/plugins/host");
+	$system_plugins = new PluginsConfig();
+	$system_plugins->init("$GLOBALS[rootdir]/plugins/system");
 	
 	echo "<form action=\"generate.php\" METHOD=POST>";
 	echo "<h1>Default plugins</h1>";
@@ -61,24 +49,15 @@
 				echo "<td>disable</td>\n";
 			}
 		}
-// 		foreach ($screens as $hK => $hV) {
-// 			$checked = "";
-// 			echo "<td><input type='checkbox' name='screen_${hK}_$key' $checked/></td>";
-// 		}
 		echo "</tr>";
 	}
 	echo "<tr><td colspan=".(count($hosts)+1)."><strong>Host plugins</strong></td></tr>";
-	ksort($groupcomps);
-	foreach ($groupcomps as $key => $value) {
-		echo "<tr><td>$value</td>";
+	foreach ($group_plugins->getPlugins() as $key => $value) {
+		echo "<tr><td>$key</td>";
 		foreach ($hosts as $hK => $hV) {
 			$checked = "checked";
-			echo "<td><input type='checkbox' name='host_${hK}_$value' $checked/></td>";
+			echo "<td><input type='checkbox' name='host_${hK}_$key' $checked/></td>";
 		}
-// 		foreach ($screens as $hK => $hV) {
-// 			$checked = "";
-// 			echo "<td><input type='checkbox' name='screen_${hK}_$value' $checked/></td>";
-// 		}
 		echo "</tr>";
 	}
 	echo "</table>";
@@ -88,12 +67,11 @@
 	foreach ($screens as $hK => $hV)
 		echo "<td>$hV[0]</td>";
 	echo "</tr>";
-	ksort($systemcomps);
-	foreach ($systemcomps as $key => $value) {
-		echo "<tr><td>$value</td>";
+	foreach ($system_plugins->getPlugins() as $key => $value) {
+		echo "<tr><td>$key</td>";
 		foreach ($screens as $hK => $hV) {
 			$checked = "checked";
-			echo "<td><input type='checkbox' name='screen_${hK}_$value' $checked/></td>";
+			echo "<td><input type='checkbox' name='screen_${hK}_$key' $checked/></td>";
 		}
 	}
 	echo "</table>";

@@ -2,76 +2,65 @@
 	require_once "config.php";
 	require_once "utils.php";
 
-function generateHostPlugin($group_plugins, $pluginName, $host) {
+function generateHostPlugin($pluginName, $plugin, $host) {
 	$GLOBALS['host'] = $host;
 	
 	$hosts = getAllRrd();
-	if( !array_key_exists($pluginName, $group_plugins) )
-		die("There is no group plugin $pluginName");
-	$plugin = $group_plugins[$pluginName];
-
 
 		$result = "";
-		
-		///// Get files to plugin
-		// parse DEF's
 		$defs = array();
-		if( !array_key_exists("DEF", $plugin) )
-			die("There is no DEF params in $pName");
-		foreach ($plugin["DEF"] as $key => $value) {
-			$tokens = explode(":", $value);
-			if( count($tokens)!=4 )
-				die("Wrong DEF - there should be 4 items: '$value'");
-			
-			$filemasks = explode("/", $tokens[1]);
-			if( count($filemasks)!=3 )
-				die("Wrong DEF - there should be 3 path elements: '$value'");
-			$filemasks[0] = str_replace("\$host", $GLOBALS['host'], $filemasks[0]);
-				
-			$defs[] = array(trim($tokens[0]), trim(implode("/", $filemasks)), trim($tokens[2]), trim($tokens[3]));
-		}
-// 		print_r($defs);
-		
-		// matching files against DEFs
 		$rawVariables = array();
 		$variables = array();
-		foreach ($hosts as $hK => $hV) {
-			foreach ($hV as $cK => $cV) {
-				foreach ($cV as $iK => $iV) {
-					// matching each DEF
-					foreach ($defs as $defK => $defV) {
-						$file = "$hK/$cK/$iV";
-						$def  = str_replace("/", "\/", $defV[1]);
-						$def  = "/$def.rrd/";
-						if( preg_match($def, $file, $matches) ) {
-							$varName = $defV[0];
-							foreach($matches as $mK => $mV)
-								$varName = str_replace("\$$mK", $mV, $varName);
-							$rawVariables[$varName] = "$hK/$cK/$iV:$defV[2]:$defV[3]";						
-							$variables[] = $varName;						
+		
+		foreach($plugin as $configItem) {
+			$configType = $configItem[0]; 
+			$configValue = $configItem[1]; 
+			if( $configType=="DEF") {
+				$tokens = explode(":", $configValue);
+				if( count($tokens)!=4 )
+					die("Wrong DEF - there should be 4 items: $pluginName:'$configValue'");
+					
+				$filemasks = explode("/", $tokens[1]);
+				if( count($filemasks)!=3 )
+					die("Wrong DEF - there should be 3 path elements: $pluginName:'$configValue'");
+				$filemasks[0] = str_replace("\$host", $GLOBALS['host'], $filemasks[0]);
+				
+				$defK = trim($tokens[0]);
+				$filemasks = trim(implode("/", $filemasks));
+				$dsName = trim($tokens[2]);
+				$dsType = trim($tokens[3]);
+				$defs[] = array($defK, $filemasks, $dsName, $dsType);
+
+				// matching files against DEFs
+				foreach ($hosts as $hK => $hV) {
+					foreach ($hV as $cK => $cV) {
+						foreach ($cV as $iK => $iV) {
+							$file = "$hK/$cK/$iV";
+							$def  = str_replace("/", "\/", $filemasks);
+							$def  = "/$def.rrd/";
+							if( preg_match($def, $file, $matches) ) {
+								$varName = $defK;
+								foreach($matches as $mK => $mV)
+									$varName = str_replace("\$$mK", $mV, $varName);
+								$rawVariables[$varName] = "$hK/$cK/$iV:$dsName:$dsType";
+								$variables[] = $varName;
+							}
 						}
 					}
 				}
-			}
-		}
-// 		print_r($variables);
-
-		////// Processing FUNC
-		$funcs = array();
-		if( array_key_exists("FUNC", $plugin) ) {
-			foreach ($plugin["FUNC"] as $key => $value) {
-				$tokens = explode(":", $value);
+			} elseif ($configType=="FUNC") {
+				$tokens = explode(":", $configValue);
 				if( count($tokens)!=4 )
-					die("Wrong FUNC - there should be 4 items: '$value'");
+					die("Wrong FUNC - there should be 4 items: '$configValue'");
 				
 				$pattern = trim($tokens[2]);
 				$pattern = str_replace("/", "\/", $pattern);
 				$pattern = "/$pattern/";
-
+				
 				$groupby = trim($tokens[3]);
 				$groupby = str_replace("/", "\/", $groupby);
 				$groupby = "/$groupby/";
-
+				
 				$outputVariables = array();
 				$equalParts = array();
 				$matchVariables = array();
@@ -80,12 +69,12 @@ function generateHostPlugin($group_plugins, $pluginName, $host) {
 						// If there is an item with the same $groupMatches - it's will be the same output variable
 						array_shift($groupMatches);
 						$glued = implode(":", $groupMatches);
-// 						echo "glued $glued\n";
+						// 						echo "glued $glued\n";
 						if( array_key_exists($glued, $matchVariables) ) {
 							$matchVariables[$glued][] = $v;
 						} else {
-							// It's the new group 
-							
+							// It's the new group
+								
 							// Build variable name based on first matched variable
 							$outputVariable = trim($tokens[0]);
 							array_unshift($groupMatches, $v);
@@ -94,26 +83,18 @@ function generateHostPlugin($group_plugins, $pluginName, $host) {
 							$outputVariables[$glued] = $outputVariable;
 							$matchVariables[$glued] = array();
 							$matchVariables[$glued][] = $v;
-						}						
+						}
 					}
 				}
 				foreach ($outputVariables as $glued => $variable) {
 					$funcs[] = array($variable, trim($tokens[1]), $matchVariables[$glued]);
-					$variables[] = $variable;						
-				}
-			}
-		}
-// 		print_r($funcs);
-
-		
-		////// Processing CDEF
-		$cdefs = array();
-		if( array_key_exists("CDEF", $plugin) ) {
-			foreach ($plugin["CDEF"] as $key => $value) {
-				$tokens = explode(":", $value);
+					$variables[] = $variable;
+				}				
+			} elseif ($configType=="CDEF") {
+				$tokens = explode(":", $configValue);
 				if( count($tokens)!=3 )
-					die("Wrong CDEF - there should be 3 items: '$value'");
-				
+					die("Wrong CDEF - there should be 3 items: '$configValue'");
+
 				// Remove spaces and trying find variables
 				$is_variables = false;
 				$expr = explode(",", $tokens[1]);
@@ -134,26 +115,26 @@ function generateHostPlugin($group_plugins, $pluginName, $host) {
 
 				$outputVariables = array();
 				$matchVariables = array();
-				
+
 				foreach ($expr as $k => $exprItem) {
 					if( $exprItem[0]=="[" ){
 						$pattern = str_replace("/", "\/", substr($exprItem, 1, strlen($exprItem)-2));
 						$pattern = "/$pattern/";
-// 						echo "pattern - $pattern\n";
-												
+						// 						echo "pattern - $pattern\n";
+
 						foreach ($variables as $v) {
 							if( preg_match($pattern, $v) && preg_match($groupby, $v, $groupMatches) ) {
 								// If there is an item with the same $groupMatches - it's will be the same output variable
 								array_shift($groupMatches);
 								$groupMatches = array_filter($groupMatches);
 								$glued = implode(":", $groupMatches);
-// 								echo "glued $glued\n";
-								
+								// 								echo "glued $glued\n";
+
 								if( array_key_exists($glued, $matchVariables) ) {
 									$matchVariables[$glued][] = $v;
 								} else {
 									// It's the new group
-										
+
 									// Build variable name based on first matched variable
 									$outputVariable = trim($tokens[0]);
 									array_unshift($groupMatches, $v);
@@ -165,12 +146,12 @@ function generateHostPlugin($group_plugins, $pluginName, $host) {
 								}
 							}
 						}
-						
+
 					}
 				}
-				
+
 				foreach ($outputVariables as $glued => $variable) {
-					$finalExpr = array();					
+					$finalExpr = array();
 					foreach ($expr as $k => $exprItem) {
 						if( $exprItem[0]=="[" ){
 							$pattern = str_replace("/", "\/", substr($exprItem, 1, strlen($exprItem)-2));
@@ -185,24 +166,15 @@ function generateHostPlugin($group_plugins, $pluginName, $host) {
 						}
 						$finalExpr[] = $exprItem;
 					}
-							
-								
+
+
 					$cdefs[] = array($variable, implode(",", $finalExpr));
 					$variables[] = $variable;
 				}
-			}
-		}
-// 		print_r($cdefs);
-		
-		
-		
-		////// Processing DRAW
-		$draws = array();
-		if( array_key_exists("DRAW", $plugin) ) {
-			foreach ($plugin["DRAW"] as $key => $value) {
-				$tokens = explode(":", $value);
+			} elseif ($configType=="DRAW") {
+				$tokens = explode(":", $configValue);
 				if( count($tokens)!=3 )
-					die("Wrong DRAW - there should be 3 items: '$value'");
+					die("Wrong DRAW - there should be 3 items: '$configValue'");
 				foreach ($variables as $v) {
 					$varPattern = str_replace("/", "\/", trim($tokens[1]));
 					$varPattern = "/$varPattern/";
@@ -215,7 +187,9 @@ function generateHostPlugin($group_plugins, $pluginName, $host) {
 				}
 			}
 		}
-		
+		if( count($defs)==0 )
+			die("There is no DEF params in $pluginName");
+
 		////// Prepare result
 		$result .= "<H2><a name=\"$pluginName\"/>$pluginName</H2>";
 		$result .= "
