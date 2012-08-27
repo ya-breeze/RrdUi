@@ -33,6 +33,7 @@
 	// Get graph list
 	$hosts   = array();
 	$screens = array();
+// 	print_r($_POST);
 	foreach ($_POST as $variable => $value) {
 		$tokens = explode("_", $variable);
 		if( $tokens[0]=="default") {
@@ -41,20 +42,24 @@
 			if( !array_key_exists($host, $hosts) )
 				$hosts[$host] = array( array(), array());
 			$hosts[$host][0][] = $comp;
+			$pluginconfig = setPluginEnabled4Host($pluginconfig, $host, $comp);
 		} elseif ( $tokens[0]=="host" ) {
 			$host = $tokens[1];
 			$comp = $tokens[2];
 			if( !array_key_exists($host, $hosts) )
 				$hosts[$host] = array( array(), array());
 			$hosts[$host][1][] = $comp;
+			$pluginconfig = setPluginEnabled4Host($pluginconfig, $host, $comp);
 		} elseif ( $tokens[0]=="screen" ) {
 			$screenName = $tokens[1];
 			$graph = $tokens[2];
 			if( !array_key_exists($screenName, $screens) )
 				$screens[$screenName] = array();
-			$screens[$tokens[1]][] = $graph;
+			$screens[$screenName][] = $graph;
+			$pluginconfig = setPluginEnabled4System($pluginconfig, $screenName, $graph);
 		}
 	}
+	setPluginConfig($pluginconfig);
 
 	// Prepare TOC
 	$tocs = array();

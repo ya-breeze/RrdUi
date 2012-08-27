@@ -11,6 +11,9 @@ function generateHostPlugin($pluginName, $plugin, $host) {
 		$defs = array();
 		$rawVariables = array();
 		$variables = array();
+		$cdefs = array();
+		$funcs = array();
+		$draws = array();
 		
 		foreach($plugin as $configItem) {
 			$configType = $configItem[0]; 

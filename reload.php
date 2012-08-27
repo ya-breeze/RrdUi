@@ -43,7 +43,8 @@
 		foreach ($hosts as $hK => $hV) {
 			if( array_key_exists($key, $hosts[$hK]) ) {
 				$checked = "";
-				$checked = "checked";
+				if( isPluginEnabled4Host($pluginconfig, $hK, $key) )
+					$checked = "checked";
 				echo "<td><input type='checkbox' name='default_${hK}_$key' $checked/></td>\n";
 			} else {
 				echo "<td>disable</td>\n";
@@ -55,7 +56,9 @@
 	foreach ($group_plugins->getPlugins() as $key => $value) {
 		echo "<tr><td>$key</td>";
 		foreach ($hosts as $hK => $hV) {
-			$checked = "checked";
+			$checked = "";
+			if( isPluginEnabled4Host($pluginconfig, $hK, $key) )
+					$checked = "checked";
 			echo "<td><input type='checkbox' name='host_${hK}_$key' $checked/></td>";
 		}
 		echo "</tr>";
@@ -65,12 +68,14 @@
 	echo "<h1>System plugins</h1>\n";
 	echo "<table border=1><tr><td></td>";
 	foreach ($screens as $hK => $hV)
-		echo "<td>$hV[0]</td>";
+		echo "<td>$hV[1]</td>";
 	echo "</tr>";
 	foreach ($system_plugins->getPlugins() as $key => $value) {
 		echo "<tr><td>$key</td>";
 		foreach ($screens as $hK => $hV) {
-			$checked = "checked";
+			$checked = "";
+			if( isPluginEnabled4Screen($pluginconfig, $hK, $key) )
+					$checked = "checked";
 			echo "<td><input type='checkbox' name='screen_${hK}_$key' $checked/></td>";
 		}
 	}
