@@ -6,7 +6,7 @@
 	$cgidir         = "cgi-bin";
 	$defaultdir     = "default";
 	$templatedir    = "templates";
-	$collectionconf = "/var/www/collection3/etc/collection.conf";
+	$collectionconf = "$rootdir/plugins/$defaultdir/collection.conf";
 
 	$colors = array("00AA00", "0000FF", "FF0000", "ffb000",
 				  "ff00ff",

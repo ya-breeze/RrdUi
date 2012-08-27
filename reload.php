@@ -16,6 +16,7 @@
 		}
 		$hosts[$v] = $components;
 	}
+	ksort($hosts);
 	
 	$groupfiles = getFiles("$GLOBALS[rootdir]/plugins/host");
 	$groupcomps = array(); 
@@ -48,13 +49,17 @@
 // 		echo "<td>$hV[0]</td>";
 	echo "</tr>";
 	
+	ksort($comps);
 	foreach ($comps as $key => $value) {
 		echo "<tr><td>$key</td>";
 		foreach ($hosts as $hK => $hV) {
-			$checked = "";
-			if( array_key_exists($key, $hosts[$hK]) )
+			if( array_key_exists($key, $hosts[$hK]) ) {
+				$checked = "";
 				$checked = "checked";
-			echo "<td><input type='checkbox' name='default_${hK}_$key' $checked/></td>\n";
+				echo "<td><input type='checkbox' name='default_${hK}_$key' $checked/></td>\n";
+			} else {
+				echo "<td>disable</td>\n";
+			}
 		}
 // 		foreach ($screens as $hK => $hV) {
 // 			$checked = "";
@@ -62,7 +67,8 @@
 // 		}
 		echo "</tr>";
 	}
-	echo "<tr><td><strong>Host plugins</strong></td></tr>";
+	echo "<tr><td colspan=".(count($hosts)+1)."><strong>Host plugins</strong></td></tr>";
+	ksort($groupcomps);
 	foreach ($groupcomps as $key => $value) {
 		echo "<tr><td>$value</td>";
 		foreach ($hosts as $hK => $hV) {
@@ -82,6 +88,7 @@
 	foreach ($screens as $hK => $hV)
 		echo "<td>$hV[0]</td>";
 	echo "</tr>";
+	ksort($systemcomps);
 	foreach ($systemcomps as $key => $value) {
 		echo "<tr><td>$value</td>";
 		foreach ($screens as $hK => $hV) {

@@ -99,7 +99,7 @@ class Component {
 						-v 'y axis title'
 						-w 600  -h200
 				 		-s end-<RRD::CV::PATH RRD_TIME>hour
-						COMMENT:\"                 Cur\:           Min\:        Max\:           Avg\:\\n\"\n";
+						COMMENT:\"                 Cur\:           Min\:        Max\:\\n\"\n";
 			$result .= $value;
 			$result .= ">";
 		}

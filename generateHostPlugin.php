@@ -2,11 +2,10 @@
 	require_once "config.php";
 	require_once "utils.php";
 
-function generateHostPlugin($pluginName, $host) {
+function generateHostPlugin($group_plugins, $pluginName, $host) {
 	$GLOBALS['host'] = $host;
 	
 	$hosts = getAllRrd();
-	$group_plugins = getHostPlugins();
 	if( !array_key_exists($pluginName, $group_plugins) )
 		die("There is no group plugin $pluginName");
 	$plugin = $group_plugins[$pluginName];
